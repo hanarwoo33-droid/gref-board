@@ -29,6 +29,7 @@
   --sprout:#C8FF64;
   --amber:#9C7018;
   --amber-soft:#F5EDDA;
+  --form-label:var(--ink-2);
   --shadow:0 1px 2px rgba(3,33,30,.06), 0 8px 24px -16px rgba(3,33,30,.3);
   --radius:14px;
   --font-display:"Hahmlet","Nanum Myeongjo",serif;
@@ -51,6 +52,7 @@
     --sprout:#C8FF64;
     --amber:#DDB35F;
     --amber-soft:#2F2718;
+    --form-label:#FFFFFF;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.8);
   }
 }
@@ -69,6 +71,7 @@
   --sprout:#C8FF64;
   --amber:#DDB35F;
   --amber-soft:#2F2718;
+  --form-label:#FFFFFF;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.8);
 }
 
@@ -153,7 +156,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
 .opener:disabled{background:var(--surface-2);color:var(--ink-3);cursor:not-allowed;border:1px solid var(--line)}
 
 form{display:grid;gap:10px}
-label.f{display:grid;gap:5px;font-size:12px;color:var(--ink-2)}
+label.f{display:grid;gap:5px;font-size:12px;color:var(--form-label)}
 input[type=text],textarea{width:100%;font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
 input[type=text]:focus,textarea:focus{outline:none;border-color:var(--sprout);background:var(--surface)}
 textarea{min-height:104px;resize:vertical;line-height:1.6}
@@ -291,7 +294,7 @@ var CONFIG = {
   ];
 
   var el = function(id){ return document.getElementById(id); };
-  var entries = [], offset = 0, openForm = null, drafts = {}, ready = false, pollTimer = null;
+  var entries = [], offset = 0, drafts = {}, ready = false, pollTimer = null;
 
   var configured = CONFIG.ENDPOINT.indexOf("http") === 0;
 
@@ -464,60 +467,28 @@ var CONFIG = {
           list.appendChild(box);
         });
         card.appendChild(list);
-      } else {
-        var lbl = document.createElement("div");
-        lbl.className = "hintlabel";
-        lbl.textContent = "이런 게 소재예요 · 소재 예시)";
-        card.appendChild(lbl);
-
-        var hints = document.createElement("div"); hints.className = "hints";
-        d.hints.forEach(function(t){
-          var s = document.createElement("span");
-          s.className = "hint"; s.textContent = t;
-          hints.appendChild(s);
-        });
-        card.appendChild(hints);
       }
+
+      var lbl = document.createElement("div");
+      lbl.className = "hintlabel";
+      lbl.textContent = "이런 게 소재예요 · 소재 예시)";
+      card.appendChild(lbl);
+
+      var hints = document.createElement("div"); hints.className = "hints";
+      d.hints.forEach(function(t){
+        var s = document.createElement("span");
+        s.className = "hint"; s.textContent = t;
+        hints.appendChild(s);
+      });
+      card.appendChild(hints);
 
       var slot = document.createElement("div");
       slot.setAttribute("data-slot", d.id);
+      slot.appendChild(buildForm(d.id));
       card.appendChild(slot);
-
-      var btn = document.createElement("button");
-      btn.className = "opener" + (mine.length ? " ghost" : "");
-      btn.type = "button";
-      btn.setAttribute("data-opener", d.id);
-      btn.textContent = mine.length ? "하나 더 보내기" : "이번 주 소재 보내기";
-      if (!configured) { btn.disabled = true; btn.textContent = "설정 필요"; }
-      btn.addEventListener("click", function(){ toggleForm(d.id); });
-      card.appendChild(btn);
 
       grid.appendChild(card);
     });
-
-    if (openForm) { var keep = openForm; openForm = null; toggleForm(keep); }
-  }
-
-  function toggleForm(deptId){
-    var slot = document.querySelector('[data-slot="' + deptId + '"]');
-    var opener = document.querySelector('[data-opener="' + deptId + '"]');
-    if (!slot) return;
-    if (openForm === deptId) {
-      slot.textContent = ""; openForm = null;
-      if (opener) opener.hidden = false;
-      return;
-    }
-    if (openForm) {
-      var prev = document.querySelector('[data-slot="' + openForm + '"]');
-      var prevBtn = document.querySelector('[data-opener="' + openForm + '"]');
-      if (prev) prev.textContent = "";
-      if (prevBtn) prevBtn.hidden = false;
-    }
-    openForm = deptId;
-    if (opener) opener.hidden = true;
-    slot.appendChild(buildForm(deptId));
-    var ta = slot.querySelector("textarea");
-    if (ta) ta.focus();
   }
 
   function buildForm(deptId){
@@ -541,11 +512,9 @@ var CONFIG = {
     var row = document.createElement("div"); row.className = "formrow";
     var submit = document.createElement("button");
     submit.className = "opener"; submit.type = "submit"; submit.textContent = "보내기";
-    var cancel = document.createElement("button");
-    cancel.className = "linkbtn"; cancel.type = "button"; cancel.textContent = "닫기";
-    cancel.addEventListener("click", function(){ toggleForm(deptId); });
+    if (!configured) { submit.disabled = true; submit.textContent = "설정 필요"; }
     var spacer = document.createElement("span"); spacer.className = "spacer";
-    row.appendChild(submit); row.appendChild(cancel); row.appendChild(spacer);
+    row.appendChild(submit); row.appendChild(spacer);
 
     form.appendChild(l1); form.appendChild(l2); form.appendChild(row);
 
@@ -565,7 +534,6 @@ var CONFIG = {
       }).then(function(res){
         if (res && res.ok === false) throw new Error(res.error || "fail");
         drafts[deptId] = "";
-        openForm = null;
         return load();
       })["catch"](function(){
         submit.disabled = false; submit.textContent = "보내기";
@@ -593,7 +561,6 @@ var CONFIG = {
     offset = Math.min(0, offset + delta);
     el("weekLabel").textContent = weekLabel(currentMonday());
     el("nextWeek").disabled = offset >= 0;
-    openForm = null;
     drafts = {};
     entries = [];
     renderStrip(); renderCards();
@@ -640,10 +607,10 @@ var CONFIG = {
   } else {
     load();
     pollTimer = setInterval(function(){
-      if (!document.hidden && !openForm) load();
+      if (!document.hidden && document.activeElement.tagName !== "TEXTAREA") load();
     }, 45000);
     document.addEventListener("visibilitychange", function(){
-      if (!document.hidden && !openForm) load();
+      if (!document.hidden && document.activeElement.tagName !== "TEXTAREA") load();
     });
   }
 })();
