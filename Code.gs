@@ -162,7 +162,7 @@ function weekKeyOf_(date) {
 
 function showThisWeek() {
   var wk = weekKeyOf_(new Date());
-  var names = { grow: '재배', seedling: '육묘', hygiene: '위생 관리', facility: '설비 관리', ai: 'AI팀' };
+  var names = { grow: '재배', seedling: '육묘', hygiene: '위생 관리', facility: '설비 관리', ai: 'AI' };
   var order = ['grow', 'seedling', 'hygiene', 'facility', 'ai'];
   var rows = readAll_();
   var lines = ['[GREF 주간 콘텐츠 소재] ' + wk, ''];
