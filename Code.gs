@@ -10,6 +10,10 @@
 var SHEET_NAME = '제출';
 var HEADERS = ['id', 'week', 'dept', 'author', 'body', 'createdAt', 'client'];
 
+// 관리자만 아는 값으로 바꾸세요. 이 값을 아는 사람은 남이 쓴 글도 수정·삭제할 수 있습니다.
+// 이 파일을 깃허브 등 다른 사람과 공유하는 곳에는 실제 값으로 올리지 마세요.
+var ADMIN_KEY = '여기에_나만_아는_비밀번호로_바꾸세요';
+
 /* ------------------------------------------------------------------ */
 
 function sheet_() {
@@ -100,6 +104,7 @@ function doPost(e) {
     var raw = (e && e.postData && e.postData.contents) || '{}';
     var d = JSON.parse(raw);
     if (d.action === 'delete') return remove_(d);
+    if (d.action === 'edit') return edit_(d);
     return add_(d);
   } catch (err) {
     return out_({ ok: false, error: String(err) });
@@ -127,14 +132,35 @@ function add_(d) {
   return out_({ ok: true, id: id });
 }
 
+function isAdmin_(d) {
+  return !!d.adminKey && String(d.adminKey) === ADMIN_KEY;
+}
+
+function canManage_(row, d) {
+  return row.client === String(d.client || '') || isAdmin_(d);
+}
+
 function remove_(d) {
   var id = String(d.id || '');
-  var client = String(d.client || '');
-  if (!id || !client) return out_({ ok: false, error: 'missing field' });
+  if (!id) return out_({ ok: false, error: 'missing field' });
   var rows = readAll_();
   for (var i = rows.length - 1; i >= 0; i--) {
-    if (rows[i].id === id && rows[i].client === client) {
+    if (rows[i].id === id && canManage_(rows[i], d)) {
       sheet_().deleteRow(rows[i].row);
+      return out_({ ok: true });
+    }
+  }
+  return out_({ ok: false, error: 'not found' });
+}
+
+function edit_(d) {
+  var id = String(d.id || '');
+  var body = String(d.body || '').trim().slice(0, 4000);
+  if (!id || !body) return out_({ ok: false, error: 'missing field' });
+  var rows = readAll_();
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].id === id && canManage_(rows[i], d)) {
+      sheet_().getRange(rows[i].row, HEADERS.indexOf('body') + 1).setValue(body);
       return out_({ ok: true });
     }
   }

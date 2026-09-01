@@ -246,6 +246,7 @@ textarea{min-height:104px;resize:vertical;line-height:1.6}
   <footer class="footer">
     <p>공유해주신 내용은 부장님과 논의 후 공개 범위를 정해 콘텐츠로 만듭니다.</p>
     <div class="acts">
+      <button class="linkbtn" id="adminToggle" type="button"></button>
       <button class="copybtn" id="reloadBtn" type="button">새로고침</button>
       <button class="copybtn" id="copyAll" type="button">이번 주 취합 내용 복사</button>
     </div>
@@ -314,6 +315,17 @@ var CONFIG = {
     } catch (e) {}
     return "";
   }
+
+  function adminKey(v){
+    try {
+      if (v === undefined) return localStorage.getItem("gref-board-admin-key") || "";
+      if (v === null) { localStorage.removeItem("gref-board-admin-key"); return ""; }
+      localStorage.setItem("gref-board-admin-key", v);
+      return v;
+    } catch (e) {}
+    return "";
+  }
+  var isAdmin = !!adminKey();
 
   /* ---------- 주차 계산 (월요일 시작) ---------- */
   function mondayOf(d){
@@ -456,13 +468,18 @@ var CONFIG = {
           var who = document.createElement("span"); who.className = "who"; who.textContent = e.author || "익명";
           var when = document.createElement("span"); when.textContent = shortTime(e.createdAt);
           meta.appendChild(who); meta.appendChild(when);
-          if (e.client === clientId) {
+          var body = document.createElement("div"); body.className = "body"; body.textContent = e.body;
+          if (e.client === clientId || isAdmin) {
+            var edit = document.createElement("button");
+            edit.className = "del"; edit.type = "button"; edit.textContent = "수정";
+            edit.addEventListener("click", function(){ startEditEntry(box, body, e); });
+            meta.appendChild(edit);
+
             var del = document.createElement("button");
             del.className = "del"; del.type = "button"; del.textContent = "삭제";
             del.addEventListener("click", function(){ removeEntry(e.id); });
             meta.appendChild(del);
           }
-          var body = document.createElement("div"); body.className = "body"; body.textContent = e.body;
           box.appendChild(meta); box.appendChild(body);
           list.appendChild(box);
         });
@@ -545,9 +562,46 @@ var CONFIG = {
   }
 
   function removeEntry(id){
-    post({ action:"delete", week: isoWeekKey(currentMonday()), id: id, client: clientId })
-      .then(function(){ return load(); })
+    post({ action:"delete", week: isoWeekKey(currentMonday()), id: id, client: clientId, adminKey: isAdmin ? adminKey() : "" })
+      .then(function(res){
+        if (res && res.ok === false) throw new Error(res.error || "fail");
+        return load();
+      })
       ["catch"](function(){ showBanner("삭제하지 못했어요. 잠시 후 다시 시도해주세요."); });
+  }
+
+  function editEntry(id, body){
+    return post({ action:"edit", week: isoWeekKey(currentMonday()), id: id, body: body, client: clientId, adminKey: isAdmin ? adminKey() : "" })
+      .then(function(res){
+        if (res && res.ok === false) throw new Error(res.error || "fail");
+        return load();
+      });
+  }
+
+  function startEditEntry(box, bodyEl, e){
+    var ta = document.createElement("textarea");
+    ta.value = e.body;
+    bodyEl.replaceWith(ta);
+    ta.focus();
+
+    var row = document.createElement("div"); row.className = "formrow";
+    var save = document.createElement("button");
+    save.className = "opener"; save.type = "button"; save.textContent = "저장";
+    var cancel = document.createElement("button");
+    cancel.className = "linkbtn"; cancel.type = "button"; cancel.textContent = "취소";
+    row.appendChild(save); row.appendChild(cancel);
+    box.appendChild(row);
+
+    cancel.addEventListener("click", function(){ renderCards(); });
+    save.addEventListener("click", function(){
+      var body = ta.value.trim();
+      if (!body) return;
+      save.disabled = true; save.textContent = "저장하는 중…";
+      editEntry(e.id, body)["catch"](function(){
+        save.disabled = false; save.textContent = "저장";
+        showBanner("수정하지 못했어요. 잠시 후 다시 시도해주세요.");
+      });
+    });
   }
 
   function showBanner(text){
@@ -569,6 +623,24 @@ var CONFIG = {
 
   el("prevWeek").addEventListener("click", function(){ setWeek(-1); });
   el("nextWeek").addEventListener("click", function(){ setWeek(1); });
+
+  function updateAdminToggle(){
+    el("adminToggle").textContent = isAdmin ? "관리자 모드 끄기" : "관리자 모드";
+  }
+  el("adminToggle").addEventListener("click", function(){
+    if (isAdmin) {
+      adminKey(null);
+      isAdmin = false;
+    } else {
+      var key = window.prompt("관리자 비밀번호를 입력하세요");
+      if (!key) return;
+      adminKey(key);
+      isAdmin = true;
+    }
+    updateAdminToggle();
+    renderCards();
+  });
+  updateAdminToggle();
   el("reloadBtn").addEventListener("click", function(){
     var b = el("reloadBtn");
     b.textContent = "불러오는 중…";
