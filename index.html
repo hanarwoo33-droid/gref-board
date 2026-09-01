@@ -540,7 +540,7 @@ var CONFIG = {
     l1.appendChild(document.createTextNode("무슨 작업인지 / 왜 하는지 / 어떤 점이 좋아지는지"));
     var ta = document.createElement("textarea");
     ta.required = true;
-    ta.placeholder = "예) 정식 3주차 케일 잎 색이 균일해져서 광량을 12시간으로 줄여봤습니다. 잎끝 타는 현상이 줄고 전기도 아껴요.";
+    ta.placeholder = "예) 온실의 다양한 재배 데이터 시리즈\n- 온실 내부 환경\n- 공기온도 / 상대습도 / 절대습도 / CO2 농도\n- 24시간 평균온도 / 주야간 평균온도 / 일 최고·최저 온도\n- 내부 일사 / 내부 PAR(광합성 유효광)\n- 엽온(작물 온도) / 배지 온도\n- 센서 상태·결측 플래그\n\n환경·에너지·관수·생육·수확·농작업 등 온실에서 수집되는 다양한 데이터를 소개하고,\n여러 데이터를 AI가 함께 읽어 재배 판단에 활용할 수 있도록 테스트하는 과정";
     ta.value = drafts[deptId] || "";
     ta.addEventListener("input", function(){ drafts[deptId] = ta.value; });
     l1.appendChild(ta);
