@@ -145,7 +145,8 @@ function remove_(d) {
   if (!id) return out_({ ok: false, error: 'missing field' });
   var rows = readAll_();
   for (var i = rows.length - 1; i >= 0; i--) {
-    if (rows[i].id === id && canManage_(rows[i], d)) {
+    if (rows[i].id === id) {
+      if (!canManage_(rows[i], d)) return out_({ ok: false, error: 'no permission' });
       sheet_().deleteRow(rows[i].row);
       return out_({ ok: true });
     }
@@ -159,7 +160,8 @@ function edit_(d) {
   if (!id || !body) return out_({ ok: false, error: 'missing field' });
   var rows = readAll_();
   for (var i = 0; i < rows.length; i++) {
-    if (rows[i].id === id && canManage_(rows[i], d)) {
+    if (rows[i].id === id) {
+      if (!canManage_(rows[i], d)) return out_({ ok: false, error: 'no permission' });
       sheet_().getRange(rows[i].row, HEADERS.indexOf('body') + 1).setValue(body);
       return out_({ ok: true });
     }

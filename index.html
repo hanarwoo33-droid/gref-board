@@ -561,13 +561,18 @@ var CONFIG = {
     return form;
   }
 
+  function manageErrorMessage(err){
+    if (err && err.message === "no permission") return "권한이 없어요. 관리자 모드라면 비밀번호가 맞는지 확인해주세요.";
+    return "처리하지 못했어요. 잠시 후 다시 시도해주세요.";
+  }
+
   function removeEntry(id){
     post({ action:"delete", week: isoWeekKey(currentMonday()), id: id, client: clientId, adminKey: isAdmin ? adminKey() : "" })
       .then(function(res){
         if (res && res.ok === false) throw new Error(res.error || "fail");
         return load();
       })
-      ["catch"](function(){ showBanner("삭제하지 못했어요. 잠시 후 다시 시도해주세요."); });
+      ["catch"](function(err){ showBanner(manageErrorMessage(err)); });
   }
 
   function editEntry(id, body){
@@ -597,9 +602,9 @@ var CONFIG = {
       var body = ta.value.trim();
       if (!body) return;
       save.disabled = true; save.textContent = "저장하는 중…";
-      editEntry(e.id, body)["catch"](function(){
+      editEntry(e.id, body)["catch"](function(err){
         save.disabled = false; save.textContent = "저장";
-        showBanner("수정하지 못했어요. 잠시 후 다시 시도해주세요.");
+        showBanner(manageErrorMessage(err));
       });
     });
   }
