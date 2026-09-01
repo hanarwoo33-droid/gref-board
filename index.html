@@ -136,8 +136,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
 .badge.done{color:var(--accent);border-color:color-mix(in srgb,var(--sprout) 45%,transparent);background:var(--accent-soft)}
 .hintlabel{font-size:12px;color:var(--ink-3);margin-bottom:-6px}
 .hints{display:flex;flex-wrap:wrap;gap:6px}
-.hint{font-size:12.5px;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);transition:background .15s,color .15s,border-color .15s}
-.hint:hover,.hint:active,.hint:focus-visible{border-color:var(--sprout);color:var(--accent);background:var(--accent-soft)}
+.hint{font-size:12.5px;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2)}
 
 .entries{display:grid;gap:8px}
 .entry{border-left:2px solid var(--sprout);background:var(--surface-2);border-radius:0 10px 10px 0;padding:10px 12px}
@@ -468,18 +467,17 @@ var CONFIG = {
       } else {
         var lbl = document.createElement("div");
         lbl.className = "hintlabel";
-        lbl.textContent = "이런 게 소재예요";
+        lbl.textContent = "이런 게 소재예요 · 소재 예시)";
         card.appendChild(lbl);
-      }
 
-      var hints = document.createElement("div"); hints.className = "hints";
-      d.hints.forEach(function(t){
-        var b = document.createElement("button");
-        b.type = "button"; b.className = "hint"; b.textContent = t;
-        b.addEventListener("click", function(){ openAndFill(d.id, t); });
-        hints.appendChild(b);
-      });
-      card.appendChild(hints);
+        var hints = document.createElement("div"); hints.className = "hints";
+        d.hints.forEach(function(t){
+          var s = document.createElement("span");
+          s.className = "hint"; s.textContent = t;
+          hints.appendChild(s);
+        });
+        card.appendChild(hints);
+      }
 
       var slot = document.createElement("div");
       slot.setAttribute("data-slot", d.id);
@@ -520,17 +518,6 @@ var CONFIG = {
     slot.appendChild(buildForm(deptId));
     var ta = slot.querySelector("textarea");
     if (ta) ta.focus();
-  }
-
-  function openAndFill(deptId, text){
-    if (openForm !== deptId) toggleForm(deptId);
-    var ta = document.querySelector('[data-slot="' + deptId + '"] textarea');
-    if (!ta) return;
-    var cur = ta.value.trim();
-    ta.value = cur ? cur + "\n" + text + " — " : text + " — ";
-    drafts[deptId] = ta.value;
-    ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
   }
 
   function buildForm(deptId){
